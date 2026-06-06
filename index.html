@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CashFlow Pro – Quản Lý Dòng Tiền Doanh Nghiệp</title>
+  <link rel="stylesheet" href="style.css" />
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <!-- Chart.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+</head>
+<body>
+
+<!-- ===== SIDEBAR ===== -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <div class="brand">
+      <div class="brand-icon"><i class="fa-solid fa-circle-dollar-to-slot"></i></div>
+      <div class="brand-text">
+        <span class="brand-name">CashFlow</span>
+        <span class="brand-sub">Pro</span>
+      </div>
+    </div>
+    <button class="sidebar-close" id="sidebarClose"><i class="fa-solid fa-xmark"></i></button>
+  </div>
+
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">Tổng Quan</div>
+    <a href="#" class="nav-item active" data-page="dashboard">
+      <i class="fa-solid fa-chart-pie"></i>
+      <span>Dashboard</span>
+    </a>
+
+    <div class="nav-section-label">Giao Dịch</div>
+    <a href="#" class="nav-item" data-page="add-transaction">
+      <i class="fa-solid fa-plus-circle"></i>
+      <span>Nhập Giao Dịch</span>
+    </a>
+    <a href="#" class="nav-item" data-page="transactions">
+      <i class="fa-solid fa-list-ul"></i>
+      <span>Danh Sách GD</span>
+    </a>
+
+    <div class="nav-section-label">Phân Tích</div>
+    <a href="#" class="nav-item" data-page="reports">
+      <i class="fa-solid fa-chart-bar"></i>
+      <span>Báo Cáo</span>
+    </a>
+    <a href="#" class="nav-item" data-page="cashbox">
+      <i class="fa-solid fa-vault"></i>
+      <span>Tồn Quỹ</span>
+    </a>
+
+    <div class="nav-section-label">Tiện Ích</div>
+    <a href="#" class="nav-item" data-page="export">
+      <i class="fa-solid fa-file-export"></i>
+      <span>Xuất Dữ Liệu</span>
+    </a>
+  </nav>
+
+  <div class="sidebar-footer">
+    <div class="sidebar-footer-text">CashFlow Pro v1.0</div>
+    <div class="sidebar-footer-sub">Dành cho doanh nghiệp nhỏ</div>
+  </div>
+</aside>
+
+<!-- ===== OVERLAY ===== -->
+<div class="overlay" id="overlay"></div>
+
+<!-- ===== MAIN ===== -->
+<div class="main-wrapper">
+
+  <!-- Top Bar -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" id="menuToggle"><i class="fa-solid fa-bars"></i></button>
+      <div class="page-title" id="pageTitle">Dashboard</div>
+    </div>
+    <div class="topbar-right">
+      <div class="topbar-date" id="topbarDate"></div>
+      <button class="btn btn-primary btn-sm" onclick="navigateTo('add-transaction')">
+        <i class="fa-solid fa-plus"></i> Thêm GD
+      </button>
+    </div>
+  </header>
+
+  <!-- Content Area -->
+  <main class="content" id="content">
+
+    <!-- ===== PAGE: DASHBOARD ===== -->
+    <section class="page active" id="page-dashboard">
+      <div class="page-header">
+        <h1>Tổng Quan Dòng Tiền</h1>
+        <p>Theo dõi tình hình tài chính doanh nghiệp trong thời gian thực</p>
+      </div>
+
+      <!-- Period Filter -->
+      <div class="period-filter-bar">
+        <button class="period-btn active" data-period="month">Tháng này</button>
+        <button class="period-btn" data-period="week">Tuần này</button>
+        <button class="period-btn" data-period="quarter">Quý này</button>
+        <button class="period-btn" data-period="year">Năm nay</button>
+        <button class="period-btn" data-period="all">Tất cả</button>
+      </div>
+
+      <!-- Warning Banner -->
+      <div class="warning-banner" id="warningBanner" style="display:none;">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        <span id="warningText"></span>
+      </div>
+
+      <!-- Stats Cards -->
+      <div class="stats-grid">
+        <div class="stat-card stat-cash">
+          <div class="stat-icon"><i class="fa-solid fa-vault"></i></div>
+          <div class="stat-body">
+            <div class="stat-label">Tồn Quỹ Hiện Tại</div>
+            <div class="stat-value" id="dashCash">0 ₫</div>
+            <div class="stat-sub">Số dư đầu kỳ + Thu - Chi</div>
+          </div>
+        </div>
+        <div class="stat-card stat-income">
+          <div class="stat-icon"><i class="fa-solid fa-arrow-trend-up"></i></div>
+          <div class="stat-body">
+            <div class="stat-label">Tổng Thu</div>
+            <div class="stat-value" id="dashIncome">0 ₫</div>
+            <div class="stat-sub" id="dashIncomeCount">0 giao dịch</div>
+          </div>
+        </div>
+        <div class="stat-card stat-expense">
+          <div class="stat-icon"><i class="fa-solid fa-arrow-trend-down"></i></div>
+          <div class="stat-body">
+            <div class="stat-label">Tổng Chi</div>
+            <div class="stat-value" id="dashExpense">0 ₫</div>
+            <div class="stat-sub" id="dashExpenseCount">0 giao dịch</div>
+          </div>
+        </div>
+        <div class="stat-card stat-net">
+          <div class="stat-icon"><i class="fa-solid fa-scale-balanced"></i></div>
+          <div class="stat-body">
+            <div class="stat-label">Dòng Tiền Thuần</div>
+            <div class="stat-value" id="dashNet">0 ₫</div>
+            <div class="stat-sub" id="dashNetStatus">Thu - Chi</div>
+          </div>
+        </div>
+        <div class="stat-card stat-ratio">
+          <div class="stat-icon"><i class="fa-solid fa-percent"></i></div>
+          <div class="stat-body">
+            <div class="stat-label">Tỷ Lệ Thu/Chi</div>
+            <div class="stat-value" id="dashRatio">--</div>
+            <div class="stat-sub">Thu ÷ Chi</div>
+          </div>
+        </div>
+        <div class="stat-card stat-total">
+          <div class="stat-icon"><i class="fa-solid fa-receipt"></i></div>
+          <div class="stat-body">
+            <div class="stat-label">Tổng Giao Dịch</div>
+            <div class="stat-value" id="dashTotal">0</div>
+            <div class="stat-sub" id="dashTotalSub">Trong kỳ</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Charts Row -->
+      <div class="charts-row">
+        <div class="chart-card">
+          <div class="chart-header">
+            <h3><i class="fa-solid fa-chart-column"></i> Thu – Chi Theo Kỳ</h3>
+          </div>
+          <div class="chart-body">
+            <canvas id="barChart" height="220"></canvas>
+          </div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-header">
+            <h3><i class="fa-solid fa-chart-line"></i> Dòng Tiền Theo Ngày</h3>
+          </div>
+          <div class="chart-body">
+            <canvas id="lineChart" height="220"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Transactions -->
+      <div class="section-card">
+        <div class="section-card-header">
+          <h3><i class="fa-solid fa-clock-rotate-left"></i> Giao Dịch Gần Đây</h3>
+          <a href="#" class="link-btn" onclick="navigateTo('transactions')">Xem tất cả <i class="fa-solid fa-arrow-right"></i></a>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table" id="recentTable">
+            <thead>
+              <tr>
+                <th>Ngày</th>
+                <th>Loại</th>
+                <th>Nhóm</th>
+                <th>Nội dung</th>
+                <th>Số tiền</th>
+              </tr>
+            </thead>
+            <tbody id="recentTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== PAGE: ADD TRANSACTION ===== -->
+    <section class="page" id="page-add-transaction">
+      <div class="page-header">
+        <h1>Nhập Giao Dịch</h1>
+        <p>Thêm khoản thu hoặc chi mới vào hệ thống</p>
+      </div>
+
+      <div class="form-card">
+        <div class="form-card-header">
+          <i class="fa-solid fa-pen-to-square"></i>
+          <span id="formTitle">Thêm Giao Dịch Mới</span>
+        </div>
+        <form id="transactionForm" novalidate>
+          <input type="hidden" id="editId" value="" />
+          <div class="form-grid">
+            <!-- Ngày -->
+            <div class="form-group">
+              <label for="txDate"><i class="fa-regular fa-calendar"></i> Ngày Giao Dịch <span class="required">*</span></label>
+              <input type="date" id="txDate" class="form-control" />
+              <div class="form-error" id="errDate"></div>
+            </div>
+
+            <!-- Loại -->
+            <div class="form-group">
+              <label for="txType"><i class="fa-solid fa-tags"></i> Loại Giao Dịch <span class="required">*</span></label>
+              <select id="txType" class="form-control" onchange="updateGroupOptions()">
+                <option value="">-- Chọn loại --</option>
+                <option value="income">💰 Thu</option>
+                <option value="expense">💸 Chi</option>
+              </select>
+              <div class="form-error" id="errType"></div>
+            </div>
+
+            <!-- Nhóm -->
+            <div class="form-group">
+              <label for="txGroup"><i class="fa-solid fa-layer-group"></i> Nhóm Giao Dịch</label>
+              <select id="txGroup" class="form-control">
+                <option value="">-- Chọn nhóm --</option>
+              </select>
+            </div>
+
+            <!-- Số tiền -->
+            <div class="form-group">
+              <label for="txAmount"><i class="fa-solid fa-coins"></i> Số Tiền (VNĐ) <span class="required">*</span></label>
+              <input type="text" id="txAmount" class="form-control" placeholder="Ví dụ: 5,000,000" />
+              <div class="form-error" id="errAmount"></div>
+            </div>
+
+            <!-- Phương thức -->
+            <div class="form-group">
+              <label for="txMethod"><i class="fa-solid fa-credit-card"></i> Phương Thức</label>
+              <select id="txMethod" class="form-control">
+                <option value="Tiền mặt">💵 Tiền mặt</option>
+                <option value="Chuyển khoản">🏦 Chuyển khoản</option>
+                <option value="Ví điện tử">📱 Ví điện tử</option>
+              </select>
+            </div>
+
+            <!-- Người thực hiện -->
+            <div class="form-group">
+              <label for="txPerson"><i class="fa-solid fa-user"></i> Người Thực Hiện</label>
+              <input type="text" id="txPerson" class="form-control" placeholder="Tên nhân viên / bộ phận" />
+            </div>
+
+            <!-- Nội dung -->
+            <div class="form-group form-group-full">
+              <label for="txDesc"><i class="fa-solid fa-file-lines"></i> Nội Dung Giao Dịch</label>
+              <input type="text" id="txDesc" class="form-control" placeholder="Mô tả ngắn gọn nội dung giao dịch" />
+            </div>
+
+            <!-- Ghi chú -->
+            <div class="form-group form-group-full">
+              <label for="txNote"><i class="fa-solid fa-note-sticky"></i> Ghi Chú</label>
+              <textarea id="txNote" class="form-control" rows="2" placeholder="Ghi chú thêm (nếu có)"></textarea>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button type="button" class="btn btn-ghost" onclick="resetForm()">
+              <i class="fa-solid fa-rotate-left"></i> Làm Lại
+            </button>
+            <button type="submit" class="btn btn-primary" id="submitBtn">
+              <i class="fa-solid fa-floppy-disk"></i> Lưu Giao Dịch
+            </button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- ===== PAGE: TRANSACTIONS LIST ===== -->
+    <section class="page" id="page-transactions">
+      <div class="page-header">
+        <h1>Danh Sách Giao Dịch</h1>
+        <p>Quản lý toàn bộ các khoản thu chi đã nhập</p>
+      </div>
+
+      <!-- Filter Bar -->
+      <div class="filter-card">
+        <div class="filter-row">
+          <div class="filter-group">
+            <label><i class="fa-solid fa-magnifying-glass"></i> Tìm kiếm</label>
+            <input type="text" id="searchInput" class="form-control" placeholder="Nội dung, nhóm, người thực hiện..." oninput="applyFilters()" />
+          </div>
+          <div class="filter-group">
+            <label><i class="fa-solid fa-filter"></i> Loại</label>
+            <select id="filterType" class="form-control" onchange="applyFilters()">
+              <option value="all">Tất cả</option>
+              <option value="income">Thu</option>
+              <option value="expense">Chi</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <label><i class="fa-solid fa-credit-card"></i> Phương thức</label>
+            <select id="filterMethod" class="form-control" onchange="applyFilters()">
+              <option value="all">Tất cả</option>
+              <option value="Tiền mặt">Tiền mặt</option>
+              <option value="Chuyển khoản">Chuyển khoản</option>
+              <option value="Ví điện tử">Ví điện tử</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <label><i class="fa-regular fa-calendar"></i> Từ ngày</label>
+            <input type="date" id="filterFrom" class="form-control" onchange="applyFilters()" />
+          </div>
+          <div class="filter-group">
+            <label><i class="fa-regular fa-calendar"></i> Đến ngày</label>
+            <input type="date" id="filterTo" class="form-control" onchange="applyFilters()" />
+          </div>
+          <div class="filter-group filter-actions">
+            <button class="btn btn-ghost btn-sm" onclick="clearFilters()"><i class="fa-solid fa-xmark"></i> Xóa lọc</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Summary Row -->
+      <div class="mini-stats" id="listSummary"></div>
+
+      <!-- Table -->
+      <div class="section-card">
+        <div class="table-wrap">
+          <table class="data-table" id="mainTable">
+            <thead>
+              <tr>
+                <th>STT</th>
+                <th>Ngày</th>
+                <th>Loại</th>
+                <th>Nhóm</th>
+                <th>Nội dung</th>
+                <th>Phương thức</th>
+                <th>Người TH</th>
+                <th>Số tiền</th>
+                <th>Ghi chú</th>
+                <th>Hành động</th>
+              </tr>
+            </thead>
+            <tbody id="mainTableBody"></tbody>
+          </table>
+        </div>
+        <div class="empty-state" id="emptyState" style="display:none;">
+          <i class="fa-solid fa-inbox"></i>
+          <p>Không có giao dịch nào</p>
+          <button class="btn btn-primary btn-sm" onclick="navigateTo('add-transaction')">
+            <i class="fa-solid fa-plus"></i> Thêm giao dịch đầu tiên
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== PAGE: REPORTS ===== -->
+    <section class="page" id="page-reports">
+      <div class="page-header">
+        <h1>Báo Cáo Dòng Tiền</h1>
+        <p>Phân tích chi tiết thu chi theo kỳ và theo nhóm</p>
+      </div>
+
+      <!-- Period Filter -->
+      <div class="period-filter-bar">
+        <button class="period-btn active" data-period="month" data-target="report">Tháng này</button>
+        <button class="period-btn" data-period="week" data-target="report">Tuần này</button>
+        <button class="period-btn" data-period="quarter" data-target="report">Quý này</button>
+        <button class="period-btn" data-period="year" data-target="report">Năm nay</button>
+        <button class="period-btn" data-period="all" data-target="report">Tất cả</button>
+        <div class="custom-period">
+          <input type="date" id="reportFrom" class="form-control form-control-sm" />
+          <span>—</span>
+          <input type="date" id="reportTo" class="form-control form-control-sm" />
+          <button class="btn btn-primary btn-sm" onclick="applyCustomReportPeriod()">Áp dụng</button>
+        </div>
+      </div>
+
+      <!-- Report Summary Cards -->
+      <div class="stats-grid stats-grid-4">
+        <div class="stat-card stat-income">
+          <div class="stat-icon"><i class="fa-solid fa-arrow-up-right-dots"></i></div>
+          <div class="stat-body">
+            <div class="stat-label">Tổng Thu</div>
+            <div class="stat-value" id="rptIncome">0 ₫</div>
+          </div>
+        </div>
+        <div class="stat-card stat-expense">
+          <div class="stat-icon"><i class="fa-solid fa-arrow-down-right-dots"></i></div>
+          <div class="stat-body">
+            <div class="stat-label">Tổng Chi</div>
+            <div class="stat-value" id="rptExpense">0 ₫</div>
+          </div>
+        </div>
+        <div class="stat-card stat-net">
+          <div class="stat-icon"><i class="fa-solid fa-wave-square"></i></div>
+          <div class="stat-body">
+            <div class="stat-label">Dòng Tiền Thuần</div>
+            <div class="stat-value" id="rptNet">0 ₫</div>
+          </div>
+        </div>
+        <div class="stat-card stat-cash">
+          <div class="stat-icon"><i class="fa-solid fa-piggy-bank"></i></div>
+          <div class="stat-body">
+            <div class="stat-label">Tồn Quỹ Cuối Kỳ</div>
+            <div class="stat-value" id="rptCash">0 ₫</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Charts row -->
+      <div class="charts-row">
+        <div class="chart-card">
+          <div class="chart-header">
+            <h3><i class="fa-solid fa-chart-pie"></i> Cơ Cấu Chi</h3>
+          </div>
+          <div class="chart-body chart-body-pie">
+            <canvas id="expensePieChart"></canvas>
+          </div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-header">
+            <h3><i class="fa-solid fa-chart-pie"></i> Cơ Cấu Thu</h3>
+          </div>
+          <div class="chart-body chart-body-pie">
+            <canvas id="incomePieChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Detail tables -->
+      <div class="charts-row">
+        <div class="section-card">
+          <div class="section-card-header">
+            <h3><i class="fa-solid fa-table"></i> Chi Tiết Thu Theo Nhóm</h3>
+          </div>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead><tr><th>Nhóm</th><th>Số GD</th><th>Tổng tiền</th><th>Tỷ trọng</th></tr></thead>
+              <tbody id="incomeGroupTable"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="section-card">
+          <div class="section-card-header">
+            <h3><i class="fa-solid fa-table"></i> Chi Tiết Chi Theo Nhóm</h3>
+          </div>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead><tr><th>Nhóm</th><th>Số GD</th><th>Tổng tiền</th><th>Tỷ trọng</th></tr></thead>
+              <tbody id="expenseGroupTable"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Monthly chart -->
+      <div class="section-card">
+        <div class="section-card-header">
+          <h3><i class="fa-solid fa-chart-bar"></i> Dòng Tiền Theo Tháng</h3>
+        </div>
+        <div class="chart-body">
+          <canvas id="monthlyChart" height="180"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== PAGE: CASHBOX ===== -->
+    <section class="page" id="page-cashbox">
+      <div class="page-header">
+        <h1>Quản Lý Tồn Quỹ</h1>
+        <p>Theo dõi số dư quỹ và cài đặt số dư đầu kỳ</p>
+      </div>
+
+      <div class="cashbox-layout">
+        <!-- Set Opening Balance -->
+        <div class="form-card cashbox-form">
+          <div class="form-card-header">
+            <i class="fa-solid fa-sliders"></i>
+            <span>Cài Đặt Số Dư Đầu Kỳ</span>
+          </div>
+          <div class="form-group">
+            <label for="openingBalance">Số dư đầu kỳ (VNĐ)</label>
+            <input type="text" id="openingBalance" class="form-control" placeholder="Ví dụ: 50,000,000" />
+          </div>
+          <div class="form-group">
+            <label for="openingDate">Ngày bắt đầu tính</label>
+            <input type="date" id="openingDate" class="form-control" />
+          </div>
+          <button class="btn btn-primary" onclick="saveOpeningBalance()">
+            <i class="fa-solid fa-floppy-disk"></i> Lưu Số Dư Đầu Kỳ
+          </button>
+        </div>
+
+        <!-- Cashbox Summary -->
+        <div class="cashbox-summary">
+          <div class="cashbox-warning" id="cashboxWarning" style="display:none;">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            <div>
+              <strong>Cảnh báo: Tồn quỹ âm!</strong>
+              <p>Tổng chi vượt quá tổng thu và số dư đầu kỳ.</p>
+            </div>
+          </div>
+
+          <div class="cashbox-cards">
+            <div class="cashbox-item">
+              <div class="ci-label"><i class="fa-solid fa-coins"></i> Số Dư Đầu Kỳ</div>
+              <div class="ci-value" id="cbOpening">0 ₫</div>
+            </div>
+            <div class="ci-op"><i class="fa-solid fa-plus"></i></div>
+            <div class="cashbox-item ci-income">
+              <div class="ci-label"><i class="fa-solid fa-arrow-up"></i> Tổng Thu</div>
+              <div class="ci-value" id="cbIncome">0 ₫</div>
+            </div>
+            <div class="ci-op"><i class="fa-solid fa-minus"></i></div>
+            <div class="cashbox-item ci-expense">
+              <div class="ci-label"><i class="fa-solid fa-arrow-down"></i> Tổng Chi</div>
+              <div class="ci-value" id="cbExpense">0 ₫</div>
+            </div>
+            <div class="ci-op ci-eq"><i class="fa-solid fa-equals"></i></div>
+            <div class="cashbox-item ci-balance">
+              <div class="ci-label"><i class="fa-solid fa-vault"></i> Tồn Quỹ Hiện Tại</div>
+              <div class="ci-value" id="cbBalance">0 ₫</div>
+            </div>
+          </div>
+
+          <!-- Method breakdown -->
+          <div class="section-card" style="margin-top:1.5rem;">
+            <div class="section-card-header">
+              <h3><i class="fa-solid fa-credit-card"></i> Phân Tích Theo Phương Thức</h3>
+            </div>
+            <div class="table-wrap">
+              <table class="data-table">
+                <thead><tr><th>Phương thức</th><th>Tổng thu</th><th>Tổng chi</th><th>Chênh lệch</th></tr></thead>
+                <tbody id="methodTable"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== PAGE: EXPORT ===== -->
+    <section class="page" id="page-export">
+      <div class="page-header">
+        <h1>Xuất Dữ Liệu</h1>
+        <p>Sao lưu, xuất báo cáo và quản lý dữ liệu hệ thống</p>
+      </div>
+
+      <div class="export-grid">
+        <div class="export-card">
+          <div class="export-icon export-icon-csv"><i class="fa-solid fa-file-csv"></i></div>
+          <h3>Xuất CSV</h3>
+          <p>Tải xuống toàn bộ danh sách giao dịch dạng file .csv, mở được bằng Excel hoặc Google Sheets.</p>
+          <button class="btn btn-primary" onclick="exportCSV()">
+            <i class="fa-solid fa-download"></i> Tải xuống CSV
+          </button>
+        </div>
+
+        <div class="export-card">
+          <div class="export-icon export-icon-demo"><i class="fa-solid fa-database"></i></div>
+          <h3>Tải Dữ Liệu Mẫu</h3>
+          <p>Nạp lại bộ dữ liệu mẫu minh họa (sẽ ghi đè dữ liệu hiện tại). Dùng để demo hoặc thử nghiệm.</p>
+          <button class="btn btn-secondary" onclick="loadSampleData(true)">
+            <i class="fa-solid fa-rotate"></i> Nạp Dữ Liệu Mẫu
+          </button>
+        </div>
+
+        <div class="export-card export-card-danger">
+          <div class="export-icon export-icon-del"><i class="fa-solid fa-trash-can"></i></div>
+          <h3>Xóa Toàn Bộ Dữ Liệu</h3>
+          <p>Xóa tất cả giao dịch và thiết lập đã lưu. Hành động này không thể hoàn tác.</p>
+          <button class="btn btn-danger" onclick="clearAllData()">
+            <i class="fa-solid fa-trash-can"></i> Xóa Toàn Bộ
+          </button>
+        </div>
+      </div>
+
+      <!-- Data Stats -->
+      <div class="section-card" style="margin-top:2rem;">
+        <div class="section-card-header">
+          <h3><i class="fa-solid fa-circle-info"></i> Thông Tin Dữ Liệu</h3>
+        </div>
+        <div class="info-table" id="dataInfoTable"></div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ===== TOAST NOTIFICATION ===== -->
+<div class="toast" id="toast">
+  <div class="toast-icon" id="toastIcon"></div>
+  <div class="toast-msg" id="toastMsg"></div>
+</div>
+
+<!-- ===== CONFIRM MODAL ===== -->
+<div class="modal-backdrop" id="modalBackdrop" style="display:none;">
+  <div class="modal">
+    <div class="modal-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+    <h3 id="modalTitle">Xác nhận</h3>
+    <p id="modalMsg"></p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">Hủy</button>
+      <button class="btn btn-danger" id="modalConfirmBtn">Xác nhận</button>
+    </div>
+  </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
