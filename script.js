@@ -6,6 +6,8 @@
 // ===== CONSTANTS =====
 const STORAGE_KEY = 'cashflow_transactions';
 const OPENING_KEY = 'cashflow_opening';
+const USERS_KEY = 'cashflow_users';
+const AUTH_KEY = 'cashflow_current_user';
 
 const INCOME_GROUPS = [
   'Thu bán hàng', 'Thu dịch vụ', 'Thu hồi công nợ', 'Thu vay', 'Thu khác'
@@ -20,7 +22,8 @@ const PAGE_TITLES = {
   'transactions': 'Danh Sách Giao Dịch',
   'reports': 'Báo Cáo',
   'cashbox': 'Tồn Quỹ',
-  'export': 'Xuất Dữ Liệu'
+  'export': 'Xuất Dữ Liệu',
+  'users': 'Người Dùng'
 };
 
 // Chart palette
@@ -28,6 +31,24 @@ const CHART_COLORS = [
   '#2563eb','#16a34a','#dc2626','#ea580c','#ca8a04',
   '#0ea5e9','#7c3aed','#db2777','#0d9488','#9333ea'
 ];
+
+const ROLE_LABELS = {
+  admin: 'Admin',
+  accountant: 'Kế toán',
+  viewer: 'Viewer'
+};
+
+const DEFAULT_USERS = [
+  { id: 'u_admin', username: 'admin', password: 'admin123', fullName: 'Quản trị hệ thống', role: 'admin', active: true },
+  { id: 'u_ketoan', username: 'ketoan', password: 'ketoan123', fullName: 'Phòng Kế toán', role: 'accountant', active: true },
+  { id: 'u_viewer', username: 'viewer', password: 'viewer123', fullName: 'Ban lãnh đạo / Người xem', role: 'viewer', active: true }
+];
+
+const ROLE_ACCESS = {
+  admin: { pages: ['dashboard','add-transaction','transactions','reports','cashbox','export','users'], create: true, edit: true, delete: true, export: true, cashbox: true, admin: true },
+  accountant: { pages: ['dashboard','add-transaction','transactions','reports','cashbox','export'], create: true, edit: true, delete: false, export: true, cashbox: true, admin: false },
+  viewer: { pages: ['dashboard','transactions','reports','cashbox'], create: false, edit: false, delete: false, export: false, cashbox: false, admin: false }
+};
 
 // Chart instances cache (to destroy before re-rendering)
 const charts = {};
@@ -39,18 +60,146 @@ let dashPeriod = 'month';
 let reportPeriod = 'month';
 let reportCustomFrom = null;
 let reportCustomTo = null;
+let users = [];
+let currentUser = null;
 
 // ===== INIT =====
 document.addEventListener('DOMContentLoaded', () => {
+  initUsers();
+  bindEvents();
+  restoreSession();
+
+  if (!currentUser) {
+    showLoginScreen();
+    return;
+  }
+
+  startApp();
+});
+
+
+// ===== AUTHENTICATION & PERMISSIONS =====
+function initUsers() {
+  const raw = localStorage.getItem(USERS_KEY);
+  users = raw ? JSON.parse(raw) : DEFAULT_USERS;
+  if (!raw) saveUsers();
+}
+
+function saveUsers() {
+  localStorage.setItem(USERS_KEY, JSON.stringify(users));
+}
+
+function restoreSession() {
+  const raw = localStorage.getItem(AUTH_KEY);
+  currentUser = raw ? JSON.parse(raw) : null;
+  if (currentUser) {
+    const fresh = users.find(u => u.id === currentUser.id && u.active);
+    currentUser = fresh || null;
+    if (!currentUser) localStorage.removeItem(AUTH_KEY);
+  }
+}
+
+function startApp() {
+  document.body.classList.remove('unauthenticated');
+  document.body.classList.add('authenticated');
   loadData();
   setTodayDate();
   renderTopbarDate();
-  bindEvents();
+  renderRoleUI();
   navigateTo('dashboard');
 
-  // If no data, load sample
-  if (transactions.length === 0) loadSampleData(false);
-});
+  if (transactions.length === 0 && isAdmin()) loadSampleData(false);
+}
+
+function showLoginScreen() {
+  document.body.classList.add('unauthenticated');
+  document.body.classList.remove('authenticated');
+  const loginUser = document.getElementById('loginUsername');
+  if (loginUser) loginUser.focus();
+}
+
+function handleLogin(e) {
+  e.preventDefault();
+  const username = document.getElementById('loginUsername').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  const err = document.getElementById('loginError');
+  const found = users.find(u => u.username.toLowerCase() === username.toLowerCase() && u.password === password);
+
+  if (!found || !found.active) {
+    if (err) err.textContent = 'Sai tài khoản, mật khẩu hoặc tài khoản đã bị khóa.';
+    return;
+  }
+
+  currentUser = { ...found };
+  delete currentUser.password;
+  localStorage.setItem(AUTH_KEY, JSON.stringify(currentUser));
+  if (err) err.textContent = '';
+  document.getElementById('loginForm').reset();
+  showToast(`Xin chào ${found.fullName || found.username}!`, 'success');
+  startApp();
+}
+
+function logout() {
+  localStorage.removeItem(AUTH_KEY);
+  currentUser = null;
+  Object.keys(charts).forEach(k => { if (charts[k]) { charts[k].destroy(); charts[k] = null; } });
+  showLoginScreen();
+}
+
+function getRoleConfig() {
+  return ROLE_ACCESS[currentUser?.role] || ROLE_ACCESS.viewer;
+}
+
+function isAdmin() {
+  return currentUser?.role === 'admin';
+}
+
+function hasPermission(action) {
+  return !!getRoleConfig()[action];
+}
+
+function canAccessPage(page) {
+  return getRoleConfig().pages.includes(page);
+}
+
+function requirePermission(action, msg = 'Bạn không có quyền thực hiện thao tác này.') {
+  if (!currentUser) { showLoginScreen(); return false; }
+  if (!hasPermission(action)) {
+    showToast(msg, 'error');
+    return false;
+  }
+  return true;
+}
+
+function renderRoleUI() {
+  document.querySelectorAll('.nav-item').forEach(item => {
+    item.style.display = canAccessPage(item.dataset.page) ? 'flex' : 'none';
+  });
+
+  setText('userNameText', currentUser?.fullName || currentUser?.username || 'Người dùng');
+  setText('userRoleText', ROLE_LABELS[currentUser?.role] || 'Vai trò');
+
+  const quickAdd = document.getElementById('quickAddBtn');
+  if (quickAdd) quickAdd.style.display = hasPermission('create') ? 'inline-flex' : 'none';
+
+  const exportBtn = document.getElementById('exportCsvBtn');
+  if (exportBtn) exportBtn.disabled = !hasPermission('export');
+  const sampleBtn = document.getElementById('sampleDataBtn');
+  if (sampleBtn) sampleBtn.disabled = !isAdmin();
+  const clearBtn = document.getElementById('clearDataBtn');
+  if (clearBtn) clearBtn.disabled = !isAdmin();
+}
+
+function roleBadge(role) {
+  const label = ROLE_LABELS[role] || role;
+  return `<span class="role-badge role-badge-${role}">${label}</span>`;
+}
+
+function fillDemoAccount(btn) {
+  document.getElementById('loginUsername').value = btn.dataset.user;
+  document.getElementById('loginPassword').value = btn.dataset.pass;
+  document.getElementById('loginError').textContent = '';
+}
 
 // ===== DATA PERSISTENCE =====
 function loadData() {
@@ -73,6 +222,7 @@ function saveTransactions() {
 }
 
 function saveOpeningBalance() {
+  if (!requirePermission('cashbox', 'Bạn không có quyền thay đổi số dư đầu kỳ.')) return;
   const amtRaw = document.getElementById('openingBalance').value;
   const date = document.getElementById('openingDate').value;
   const amt = parseAmount(amtRaw);
@@ -165,6 +315,12 @@ function filterByPeriod(txList, from, to) {
 
 // ===== NAVIGATION =====
 function navigateTo(page) {
+  if (!currentUser) { showLoginScreen(); return; }
+  if (!canAccessPage(page)) {
+    showToast('Vai trò hiện tại không được truy cập chức năng này.', 'error');
+    page = 'dashboard';
+  }
+
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
 
@@ -187,11 +343,25 @@ function navigateTo(page) {
     case 'reports': renderReports(); break;
     case 'cashbox': renderCashbox(); break;
     case 'export': renderExportPage(); break;
+    case 'users': renderUsersPage(); break;
   }
 }
 
 // ===== BIND EVENTS =====
 function bindEvents() {
+  // Login / Logout
+  document.getElementById('loginForm')?.addEventListener('submit', handleLogin);
+  document.getElementById('logoutBtn')?.addEventListener('click', logout);
+  document.getElementById('passwordToggle')?.addEventListener('click', () => {
+    const input = document.getElementById('loginPassword');
+    const icon = document.querySelector('#passwordToggle i');
+    const isPassword = input.type === 'password';
+    input.type = isPassword ? 'text' : 'password';
+    if (icon) icon.className = isPassword ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye';
+  });
+  document.querySelectorAll('.demo-account').forEach(btn => btn.addEventListener('click', () => fillDemoAccount(btn)));
+  document.getElementById('userForm')?.addEventListener('submit', handleUserFormSubmit);
+
   // Sidebar nav
   document.querySelectorAll('.nav-item').forEach(item => {
     item.addEventListener('click', e => {
@@ -315,9 +485,11 @@ function validateForm() {
 
 function handleFormSubmit(e) {
   e.preventDefault();
+  const id = document.getElementById('editId').value;
+  if (id && !requirePermission('edit', 'Bạn không có quyền sửa giao dịch.')) return;
+  if (!id && !requirePermission('create', 'Bạn không có quyền thêm giao dịch.')) return;
   if (!validateForm()) return;
 
-  const id = document.getElementById('editId').value;
   const tx = {
     id: id || generateId(),
     date: document.getElementById('txDate').value,
@@ -361,6 +533,7 @@ function resetForm() {
 }
 
 function editTransaction(id) {
+  if (!requirePermission('edit', 'Bạn không có quyền sửa giao dịch.')) return;
   const tx = transactions.find(t => t.id === id);
   if (!tx) return;
 
@@ -383,6 +556,7 @@ function editTransaction(id) {
 }
 
 function deleteTransaction(id) {
+  if (!requirePermission('delete', 'Chỉ Admin mới được xóa giao dịch.')) return;
   const tx = transactions.find(t => t.id === id);
   if (!tx) return;
   openModal(
@@ -633,12 +807,9 @@ function renderMainTable(list) {
       <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--gray-400);font-size:.8rem" title="${escHtml(tx.note)}">${tx.note || '--'}</td>
       <td>
         <div class="action-btns">
-          <button class="btn-icon btn-edit" onclick="editTransaction('${tx.id}')" title="Sửa">
-            <i class="fa-solid fa-pen"></i>
-          </button>
-          <button class="btn-icon btn-del" onclick="deleteTransaction('${tx.id}')" title="Xóa">
-            <i class="fa-solid fa-trash"></i>
-          </button>
+          ${hasPermission('edit') ? `<button class="btn-icon btn-edit" onclick="editTransaction('${tx.id}')" title="Sửa"><i class="fa-solid fa-pen"></i></button>` : ''}
+          ${hasPermission('delete') ? `<button class="btn-icon btn-del" onclick="deleteTransaction('${tx.id}')" title="Xóa"><i class="fa-solid fa-trash"></i></button>` : ''}
+          ${(!hasPermission('edit') && !hasPermission('delete')) ? '<span style="color:var(--gray-400);font-size:.78rem">Chỉ xem</span>' : ''}
         </div>
       </td>
     </tr>
@@ -855,6 +1026,7 @@ function renderCashbox() {
 
 // ===== EXPORT PAGE =====
 function renderExportPage() {
+  renderRoleUI();
   const totalIncome = transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
   const totalExpense = transactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
 
@@ -874,6 +1046,7 @@ function renderExportPage() {
 
 // ===== CSV EXPORT =====
 function exportCSV() {
+  if (!requirePermission('export', 'Bạn không có quyền xuất dữ liệu.')) return;
   if (transactions.length === 0) { showToast('Không có dữ liệu để xuất!', 'error'); return; }
   const headers = ['STT','Ngày','Loại','Nhóm','Nội dung','Phương thức','Người thực hiện','Số tiền','Ghi chú'];
   const rows = transactions.map((tx, i) => [
@@ -901,6 +1074,7 @@ function exportCSV() {
 
 // ===== CLEAR ALL =====
 function clearAllData() {
+  if (!isAdmin()) { showToast('Chỉ Admin mới được xóa toàn bộ dữ liệu.', 'error'); return; }
   openModal(
     'Xóa toàn bộ dữ liệu?',
     'Hành động này sẽ xóa <strong>tất cả</strong> giao dịch và thiết lập đã lưu. Không thể hoàn tác!',
@@ -919,6 +1093,7 @@ function clearAllData() {
 
 // ===== SAMPLE DATA =====
 function loadSampleData(confirm_override) {
+  if (confirm_override && !isAdmin()) { showToast('Chỉ Admin mới được nạp dữ liệu mẫu.', 'error'); return; }
   const doLoad = () => {
     const today = new Date();
     const d = (offset = 0, month_offset = 0) => {
@@ -969,6 +1144,114 @@ function loadSampleData(confirm_override) {
   } else {
     doLoad();
   }
+}
+
+
+// ===== USER MANAGEMENT =====
+function renderUsersPage() {
+  if (!isAdmin()) { navigateTo('dashboard'); return; }
+  renderUsersTable();
+}
+
+function renderUsersTable() {
+  const tbody = document.getElementById('usersTableBody');
+  if (!tbody) return;
+  tbody.innerHTML = users.map(u => `
+    <tr>
+      <td><strong>${escHtml(u.username)}</strong></td>
+      <td>${escHtml(u.fullName || '--')}</td>
+      <td>${roleBadge(u.role)}</td>
+      <td>${u.active ? '<span class="status-badge status-active">Đang hoạt động</span>' : '<span class="status-badge status-locked">Đã khóa</span>'}</td>
+      <td>
+        <div class="action-btns">
+          <button class="btn-icon btn-edit" onclick="editUser('${u.id}')" title="Sửa"><i class="fa-solid fa-pen"></i></button>
+          <button class="btn-icon ${u.active ? 'btn-lock' : 'btn-unlock'}" onclick="toggleUserStatus('${u.id}')" title="${u.active ? 'Khóa' : 'Mở khóa'}">
+            <i class="fa-solid fa-${u.active ? 'lock' : 'unlock'}"></i>
+          </button>
+          ${u.username !== 'admin' ? `<button class="btn-icon btn-del" onclick="deleteUser('${u.id}')" title="Xóa"><i class="fa-solid fa-trash"></i></button>` : ''}
+        </div>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function handleUserFormSubmit(e) {
+  e.preventDefault();
+  if (!isAdmin()) { showToast('Chỉ Admin mới được quản lý người dùng.', 'error'); return; }
+
+  const id = document.getElementById('userEditId').value;
+  const fullName = document.getElementById('newFullName').value.trim();
+  const username = document.getElementById('newUsername').value.trim().toLowerCase();
+  const password = document.getElementById('newPassword').value.trim();
+  const role = document.getElementById('newRole').value;
+
+  if (!username || !/^[a-z0-9_\.]{3,20}$/.test(username)) {
+    showToast('Tên đăng nhập cần 3–20 ký tự, chỉ gồm chữ không dấu, số, dấu _ hoặc dấu chấm.', 'error');
+    return;
+  }
+  if (!id && password.length < 6) { showToast('Mật khẩu cần tối thiểu 6 ký tự.', 'error'); return; }
+  if (id && password && password.length < 6) { showToast('Mật khẩu mới cần tối thiểu 6 ký tự.', 'error'); return; }
+  if (users.some(u => u.username === username && u.id !== id)) { showToast('Tên đăng nhập đã tồn tại.', 'error'); return; }
+
+  if (id) {
+    const idx = users.findIndex(u => u.id === id);
+    if (idx !== -1) {
+      users[idx] = { ...users[idx], username, fullName, role, ...(password ? { password } : {}) };
+      showToast('Đã cập nhật tài khoản.', 'success');
+    }
+  } else {
+    users.push({ id: generateId(), username, password, fullName, role, active: true });
+    showToast('Đã tạo tài khoản mới.', 'success');
+  }
+
+  saveUsers();
+  resetUserForm();
+  renderUsersTable();
+}
+
+function editUser(id) {
+  const u = users.find(x => x.id === id);
+  if (!u) return;
+  document.getElementById('userEditId').value = u.id;
+  document.getElementById('newFullName').value = u.fullName || '';
+  document.getElementById('newUsername').value = u.username;
+  document.getElementById('newPassword').value = '';
+  document.getElementById('newPassword').placeholder = 'Để trống nếu không đổi mật khẩu';
+  document.getElementById('newRole').value = u.role;
+  document.getElementById('saveUserBtn').innerHTML = '<i class="fa-solid fa-pen-to-square"></i> Cập nhật tài khoản';
+}
+
+function resetUserForm() {
+  document.getElementById('userEditId').value = '';
+  document.getElementById('newFullName').value = '';
+  document.getElementById('newUsername').value = '';
+  document.getElementById('newPassword').value = '';
+  document.getElementById('newPassword').placeholder = 'Tối thiểu 6 ký tự';
+  document.getElementById('newRole').value = 'viewer';
+  document.getElementById('saveUserBtn').innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Lưu tài khoản';
+}
+
+function toggleUserStatus(id) {
+  const u = users.find(x => x.id === id);
+  if (!u) return;
+  if (u.id === currentUser?.id) { showToast('Không thể tự khóa tài khoản đang đăng nhập.', 'error'); return; }
+  u.active = !u.active;
+  saveUsers();
+  renderUsersTable();
+  showToast(u.active ? 'Đã mở khóa tài khoản.' : 'Đã khóa tài khoản.', 'success');
+}
+
+function deleteUser(id) {
+  const u = users.find(x => x.id === id);
+  if (!u) return;
+  if (u.username === 'admin') { showToast('Không thể xóa tài khoản admin mặc định.', 'error'); return; }
+  if (u.id === currentUser?.id) { showToast('Không thể xóa tài khoản đang đăng nhập.', 'error'); return; }
+  openModal('Xóa tài khoản?', `Bạn có chắc muốn xóa tài khoản <strong>${escHtml(u.username)}</strong>?`, () => {
+    users = users.filter(x => x.id !== id);
+    saveUsers();
+    renderUsersTable();
+    showToast('Đã xóa tài khoản.', 'success');
+  });
 }
 
 // ===== MODAL =====
