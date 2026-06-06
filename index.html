@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CashFlow Pro – Quản Lý Dòng Tiền Doanh Nghiệp</title>
+  <title>ATKD – Quản Lý Vốn Bằng Tiền</title>
   <link rel="stylesheet" href="style.css" />
   <!-- Font Awesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
@@ -11,38 +11,68 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <!-- Chart.js -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <!-- SheetJS: đọc file Excel .xlsx/.xls khi nhập dữ liệu -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body class="unauthenticated">
 
 <!-- ===== LOGIN SCREEN ===== -->
 <section class="login-screen" id="loginScreen">
+  <div class="login-bg-orb login-bg-orb-1"></div>
+  <div class="login-bg-orb login-bg-orb-2"></div>
+
   <div class="login-shell">
     <div class="login-hero">
-      <div class="login-brand">
-        <div class="brand-icon login-brand-icon"><i class="fa-solid fa-circle-dollar-to-slot"></i></div>
-        <div>
-          <h1>CashFlow Pro</h1>
-          <p>Hệ thống quản lý vốn bằng tiền cho doanh nghiệp</p>
+      <div class="login-hero-top">
+        <div class="login-brand">
+          <div class="login-brand-icon"><i class="fa-solid fa-building-columns"></i></div>
+          <div>
+            <div class="login-eyebrow">Accounting Technology</div>
+            <h1>ATKD</h1>
+            <p>Website quản lý vốn bằng tiền cho doanh nghiệp</p>
+          </div>
         </div>
+        <div class="login-status-pill"><span></span> Hệ thống nội bộ</div>
       </div>
-      <div class="login-benefits">
-        <div><i class="fa-solid fa-lock"></i><span>Đăng nhập trước khi sử dụng</span></div>
-        <div><i class="fa-solid fa-user-shield"></i><span>Phân quyền theo vai trò</span></div>
-        <div><i class="fa-solid fa-database"></i><span>Dữ liệu lưu trên trình duyệt bằng LocalStorage</span></div>
+
+      <div class="login-hero-main">
+        <h2>Kiểm soát thu, chi và tồn quỹ trên một giao diện duy nhất.</h2>
+        <p>Theo dõi dòng tiền, phân tích báo cáo và quản lý quyền truy cập theo từng vai trò trong nhóm.</p>
+      </div>
+
+      <div class="login-feature-grid">
+        <div class="login-feature-item">
+          <i class="fa-solid fa-shield-halved"></i>
+          <span>Đăng nhập bảo vệ dữ liệu</span>
+        </div>
+        <div class="login-feature-item">
+          <i class="fa-solid fa-users-gear"></i>
+          <span>Phân quyền Admin / Kế toán / Viewer</span>
+        </div>
+        <div class="login-feature-item">
+          <i class="fa-solid fa-chart-line"></i>
+          <span>Báo cáo dòng tiền trực quan</span>
+        </div>
+        <div class="login-feature-item">
+          <i class="fa-solid fa-database"></i>
+          <span>Lưu dữ liệu bằng LocalStorage</span>
+        </div>
       </div>
     </div>
 
     <div class="login-card">
+      <div class="login-card-badge"><i class="fa-solid fa-lock"></i> Secure Access</div>
       <div class="login-card-header">
-        <h2>Đăng nhập hệ thống</h2>
-        <p>Chọn tài khoản phù hợp với vai trò sử dụng</p>
+        <h2>Đăng nhập</h2>
+        <p>Nhập tài khoản được cấp để truy cập hệ thống ATKD</p>
       </div>
+
       <form id="loginForm" novalidate>
-        <div class="form-group">
+        <div class="form-group login-form-group">
           <label for="loginUsername"><i class="fa-solid fa-user"></i> Tên đăng nhập</label>
           <input type="text" id="loginUsername" class="form-control" placeholder="Ví dụ: admin" autocomplete="username" />
         </div>
-        <div class="form-group">
+        <div class="form-group login-form-group">
           <label for="loginPassword"><i class="fa-solid fa-key"></i> Mật khẩu</label>
           <div class="password-field">
             <input type="password" id="loginPassword" class="form-control" placeholder="Nhập mật khẩu" autocomplete="current-password" />
@@ -50,7 +80,7 @@
           </div>
         </div>
         <div class="login-error" id="loginError"></div>
-        <button type="submit" class="btn btn-primary login-submit"><i class="fa-solid fa-right-to-bracket"></i> Đăng nhập</button>
+        <button type="submit" class="btn btn-primary login-submit"><i class="fa-solid fa-right-to-bracket"></i> Đăng nhập hệ thống</button>
       </form>
 
       <div class="demo-accounts">
@@ -70,8 +100,8 @@
     <div class="brand">
       <div class="brand-icon"><i class="fa-solid fa-circle-dollar-to-slot"></i></div>
       <div class="brand-text">
-        <span class="brand-name">CashFlow</span>
-        <span class="brand-sub">Pro</span>
+        <span class="brand-name">ATKD</span>
+        <span class="brand-sub">Finance</span>
       </div>
     </div>
     <button class="sidebar-close" id="sidebarClose"><i class="fa-solid fa-xmark"></i></button>
@@ -82,6 +112,10 @@
     <a href="#" class="nav-item active" data-page="dashboard">
       <i class="fa-solid fa-chart-pie"></i>
       <span>Dashboard</span>
+    </a>
+    <a href="#" class="nav-item" data-page="team">
+      <i class="fa-solid fa-people-group"></i>
+      <span>Thành Viên</span>
     </a>
 
     <div class="nav-section-label">Giao Dịch</div>
@@ -116,7 +150,7 @@
   </nav>
 
   <div class="sidebar-footer">
-    <div class="sidebar-footer-text">CashFlow Pro v1.0</div>
+    <div class="sidebar-footer-text">ATKD Finance v1.0</div>
     <div class="sidebar-footer-sub">Dành cho doanh nghiệp nhỏ</div>
   </div>
 </aside>
@@ -157,72 +191,6 @@
         <p>Theo dõi tình hình tài chính doanh nghiệp trong thời gian thực</p>
       </div>
 
-
-      <!-- Team Assignment -->
-      <div class="team-section-card">
-        <div class="team-section-header">
-          <div>
-            <span class="eyebrow"><i class="fa-solid fa-users-gear"></i> Nhóm phát triển website</span>
-            <h2>Thành viên & phân công công việc</h2>
-            <p>Phân chia nhiệm vụ đồng đều trong quá trình xây dựng website quản lý vốn bằng tiền.</p>
-          </div>
-          <div class="team-badge"><i class="fa-solid fa-code-branch"></i> HTML · CSS · JavaScript</div>
-        </div>
-
-        <div class="team-grid">
-          <div class="team-member-card">
-            <div class="member-avatar">DA</div>
-            <div class="member-info">
-              <h3>Dương Thuý An</h3>
-              <p>Thiết kế giao diện tổng quan</p>
-              <ul>
-                <li>Xây dựng bố cục trang chủ và dashboard.</li>
-                <li>Thiết kế hệ thống màu sắc, thẻ thống kê và bố cục responsive.</li>
-                <li>Kiểm tra trải nghiệm người dùng trên laptop và điện thoại.</li>
-              </ul>
-            </div>
-          </div>
-
-          <div class="team-member-card">
-            <div class="member-avatar">TT</div>
-            <div class="member-info">
-              <h3>Nghiêm Thu Thuỷ</h3>
-              <p>Xử lý dữ liệu và giao dịch</p>
-              <ul>
-                <li>Phụ trách chức năng nhập, sửa, xóa giao dịch thu chi.</li>
-                <li>Thiết lập nhóm giao dịch, phương thức thanh toán và kiểm tra dữ liệu đầu vào.</li>
-                <li>Quản lý lưu trữ dữ liệu bằng LocalStorage.</li>
-              </ul>
-            </div>
-          </div>
-
-          <div class="team-member-card">
-            <div class="member-avatar">VK</div>
-            <div class="member-info">
-              <h3>Vũ Đăng Khoa</h3>
-              <p>Báo cáo và phân tích dòng tiền</p>
-              <ul>
-                <li>Xây dựng các chỉ tiêu tổng thu, tổng chi, dòng tiền thuần và tồn quỹ.</li>
-                <li>Thiết kế biểu đồ thu chi, dòng tiền theo ngày và cơ cấu theo nhóm.</li>
-                <li>Phụ trách chức năng lọc dữ liệu, xuất CSV và kiểm tra kết quả báo cáo.</li>
-              </ul>
-            </div>
-          </div>
-
-          <div class="team-member-card">
-            <div class="member-avatar">BD</div>
-            <div class="member-info">
-              <h3>Bùi Đình Đăng</h3>
-              <p>Đăng nhập, phân quyền và hoàn thiện hệ thống</p>
-              <ul>
-                <li>Phụ trách màn hình đăng nhập và phân quyền người dùng.</li>
-                <li>Thiết lập vai trò Admin, Kế toán và Người xem báo cáo.</li>
-                <li>Kiểm thử lỗi, tối ưu thao tác và hoàn thiện tài liệu sử dụng.</li>
-              </ul>
-            </div>
-          </div>
-        </div>
-      </div>
 
       <!-- Period Filter -->
       <div class="period-filter-bar">
@@ -333,6 +301,84 @@
         </div>
       </div>
     </section>
+
+
+
+    <!-- ===== PAGE: TEAM ===== -->
+    <section class="page" id="page-team">
+      <div class="page-header">
+        <h1>Thành Viên & Phân Công Công Việc</h1>
+        <p>Thông tin nhóm phát triển website và nhiệm vụ phụ trách của từng thành viên</p>
+      </div>
+
+      <div class="team-section-card">
+        <div class="team-section-header">
+          <div>
+            <span class="eyebrow"><i class="fa-solid fa-users-gear"></i> Nhóm phát triển website</span>
+            <h2>Thành viên & phân công công việc</h2>
+            <p>Phân chia nhiệm vụ đồng đều trong quá trình xây dựng website quản lý vốn bằng tiền.</p>
+          </div>
+          <div class="team-badge"><i class="fa-solid fa-code-branch"></i> HTML · CSS · JavaScript</div>
+        </div>
+
+        <div class="team-grid">
+          <div class="team-member-card">
+            <div class="member-avatar">DA</div>
+            <div class="member-info">
+              <h3>Dương Thuý An</h3>
+              <p>Thiết kế giao diện tổng quan</p>
+              <ul>
+                <li>Xây dựng bố cục trang chủ và dashboard.</li>
+                <li>Thiết kế hệ thống màu sắc, thẻ thống kê và bố cục responsive.</li>
+                <li>Kiểm tra trải nghiệm người dùng trên laptop và điện thoại.</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="team-member-card">
+            <div class="member-avatar">TT</div>
+            <div class="member-info">
+              <h3>Nghiêm Thu Thuỷ</h3>
+              <p>Xử lý dữ liệu và giao dịch</p>
+              <ul>
+                <li>Phụ trách chức năng nhập, sửa, xóa giao dịch thu chi.</li>
+                <li>Thiết lập nhóm giao dịch, phương thức thanh toán và kiểm tra dữ liệu đầu vào.</li>
+                <li>Quản lý lưu trữ dữ liệu bằng LocalStorage.</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="team-member-card">
+            <div class="member-avatar">VK</div>
+            <div class="member-info">
+              <h3>Vũ Đăng Khoa</h3>
+              <p>Báo cáo và phân tích dòng tiền</p>
+              <ul>
+                <li>Xây dựng các chỉ tiêu tổng thu, tổng chi, dòng tiền thuần và tồn quỹ.</li>
+                <li>Thiết kế biểu đồ thu chi, dòng tiền theo ngày và cơ cấu theo nhóm.</li>
+                <li>Phụ trách chức năng lọc dữ liệu, xuất CSV và kiểm tra kết quả báo cáo.</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="team-member-card">
+            <div class="member-avatar">BD</div>
+            <div class="member-info">
+              <h3>Bùi Đình Đăng</h3>
+              <p>Đăng nhập, phân quyền và hoàn thiện hệ thống</p>
+              <ul>
+                <li>Phụ trách màn hình đăng nhập và phân quyền người dùng.</li>
+                <li>Thiết lập vai trò Admin, Kế toán và Người xem báo cáo.</li>
+                <li>Kiểm thử lỗi, tối ưu thao tác và hoàn thiện tài liệu sử dụng.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+
+    </section>
+
 
     <!-- ===== PAGE: ADD TRANSACTION ===== -->
     <section class="page" id="page-add-transaction">
@@ -703,6 +749,29 @@
           <button class="btn btn-primary" id="exportCsvBtn" onclick="exportCSV()">
             <i class="fa-solid fa-download"></i> Tải xuống CSV
           </button>
+        </div>
+
+        <div class="export-card import-card">
+          <div class="export-icon export-icon-import"><i class="fa-solid fa-file-import"></i></div>
+          <h3>Nhập Dữ Liệu Có Sẵn</h3>
+          <p>Tải dữ liệu giao dịch từ file CSV, Excel .xlsx hoặc .xls. Có thể nhập nối tiếp hoặc thay thế toàn bộ dữ liệu hiện tại.</p>
+          <div class="import-controls">
+            <label class="file-upload-box" for="importFile">
+              <i class="fa-solid fa-cloud-arrow-up"></i>
+              <span id="importFileName">Chọn file CSV / Excel</span>
+            </label>
+            <input type="file" id="importFile" accept=".csv,.xlsx,.xls" onchange="handleImportFileSelect()" hidden />
+            <select id="importMode" class="form-control">
+              <option value="append">Nhập thêm vào dữ liệu hiện tại</option>
+              <option value="replace">Thay thế toàn bộ dữ liệu hiện tại</option>
+            </select>
+            <button class="btn btn-primary" id="importDataBtn" onclick="importDataFile()">
+              <i class="fa-solid fa-upload"></i> Nhập dữ liệu
+            </button>
+            <button class="btn btn-ghost btn-sm" onclick="downloadImportTemplate()">
+              <i class="fa-solid fa-file-arrow-down"></i> Tải file mẫu CSV
+            </button>
+          </div>
         </div>
 
         <div class="export-card">

@@ -1,5 +1,5 @@
 /* ========================================================
-   CashFlow Pro – script.js
+   ATKD – script.js
    Quản lý dòng tiền doanh nghiệp – Vanilla JS + LocalStorage
    ======================================================== */
 
@@ -18,6 +18,7 @@ const EXPENSE_GROUPS = [
 
 const PAGE_TITLES = {
   'dashboard': 'Dashboard',
+  'team': 'Thành Viên',
   'add-transaction': 'Nhập Giao Dịch',
   'transactions': 'Danh Sách Giao Dịch',
   'reports': 'Báo Cáo',
@@ -45,9 +46,9 @@ const DEFAULT_USERS = [
 ];
 
 const ROLE_ACCESS = {
-  admin: { pages: ['dashboard','add-transaction','transactions','reports','cashbox','export','users'], create: true, edit: true, delete: true, export: true, cashbox: true, admin: true },
-  accountant: { pages: ['dashboard','add-transaction','transactions','reports','cashbox','export'], create: true, edit: true, delete: false, export: true, cashbox: true, admin: false },
-  viewer: { pages: ['dashboard','transactions','reports','cashbox'], create: false, edit: false, delete: false, export: false, cashbox: false, admin: false }
+  admin: { pages: ['dashboard','team','add-transaction','transactions','reports','cashbox','export','users'], create: true, edit: true, delete: true, export: true, cashbox: true, admin: true },
+  accountant: { pages: ['dashboard','team','add-transaction','transactions','reports','cashbox','export'], create: true, edit: true, delete: false, export: true, cashbox: true, admin: false },
+  viewer: { pages: ['dashboard','team','transactions','reports','cashbox'], create: false, edit: false, delete: false, export: false, cashbox: false, admin: false }
 };
 
 // Chart instances cache (to destroy before re-rendering)
@@ -184,6 +185,12 @@ function renderRoleUI() {
 
   const exportBtn = document.getElementById('exportCsvBtn');
   if (exportBtn) exportBtn.disabled = !hasPermission('export');
+  const importBtn = document.getElementById('importDataBtn');
+  if (importBtn) importBtn.disabled = !hasPermission('create');
+  const importFile = document.getElementById('importFile');
+  if (importFile) importFile.disabled = !hasPermission('create');
+  const importMode = document.getElementById('importMode');
+  if (importMode) importMode.disabled = !hasPermission('create');
   const sampleBtn = document.getElementById('sampleDataBtn');
   if (sampleBtn) sampleBtn.disabled = !isAdmin();
   const clearBtn = document.getElementById('clearDataBtn');
@@ -1070,6 +1077,208 @@ function exportCSV() {
   a.click();
   URL.revokeObjectURL(url);
   showToast('Đã xuất file CSV thành công!', 'success');
+}
+
+
+// ===== IMPORT DATA =====
+function handleImportFileSelect() {
+  const fileInput = document.getElementById('importFile');
+  const nameEl = document.getElementById('importFileName');
+  if (!fileInput || !nameEl) return;
+  const file = fileInput.files && fileInput.files[0];
+  nameEl.textContent = file ? file.name : 'Chọn file CSV / Excel';
+}
+
+function importDataFile() {
+  if (!requirePermission('create', 'Bạn không có quyền nhập dữ liệu.')) return;
+
+  const fileInput = document.getElementById('importFile');
+  const mode = document.getElementById('importMode')?.value || 'append';
+  const file = fileInput?.files?.[0];
+  if (!file) {
+    showToast('Vui lòng chọn file CSV hoặc Excel để nhập.', 'error');
+    return;
+  }
+
+  const ext = file.name.split('.').pop().toLowerCase();
+  const reader = new FileReader();
+
+  reader.onload = (e) => {
+    try {
+      let rows = [];
+      if (ext === 'csv') {
+        rows = parseCSVText(e.target.result);
+      } else if (['xlsx', 'xls'].includes(ext)) {
+        if (typeof XLSX === 'undefined') {
+          showToast('Chưa tải được thư viện đọc Excel. Hãy kiểm tra kết nối mạng hoặc dùng file CSV.', 'error');
+          return;
+        }
+        const workbook = XLSX.read(e.target.result, { type: 'array' });
+        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+        rows = XLSX.utils.sheet_to_json(firstSheet, { defval: '' });
+      } else {
+        showToast('Định dạng file không hỗ trợ. Vui lòng dùng CSV, XLSX hoặc XLS.', 'error');
+        return;
+      }
+
+      const imported = normalizeImportedRows(rows);
+      if (imported.length === 0) {
+        showToast('Không tìm thấy dòng dữ liệu hợp lệ trong file.', 'error');
+        return;
+      }
+
+      const applyImport = () => {
+        if (mode === 'replace') transactions = imported;
+        else transactions = [...imported, ...transactions];
+
+        saveTransactions();
+        fileInput.value = '';
+        handleImportFileSelect();
+        showToast(`Đã nhập ${imported.length} giao dịch từ file.`, 'success');
+        renderExportPage();
+      };
+
+      if (mode === 'replace') {
+        openModal(
+          'Thay thế toàn bộ dữ liệu?',
+          `File có <strong>${imported.length}</strong> giao dịch hợp lệ. Thao tác này sẽ xóa dữ liệu hiện tại và thay bằng dữ liệu trong file.`,
+          applyImport
+        );
+      } else {
+        applyImport();
+      }
+    } catch (err) {
+      console.error(err);
+      showToast('Không thể đọc file. Vui lòng kiểm tra lại định dạng và tiêu đề cột.', 'error');
+    }
+  };
+
+  if (ext === 'csv') reader.readAsText(file, 'utf-8');
+  else reader.readAsArrayBuffer(file);
+}
+
+function normalizeImportedRows(rows) {
+  return rows.map((row) => {
+    const date = normalizeDateValue(getField(row, ['Ngày','Ngay','Date','date','Ngày giao dịch','Ngay giao dich']));
+    const type = normalizeTypeValue(getField(row, ['Loại','Loai','Type','type','Loại giao dịch','Loai giao dich']));
+    const amount = parseAmount(getField(row, ['Số tiền','So tien','Amount','amount','Số Tiền','So Tien']));
+    if (!date || !type || !amount || amount <= 0) return null;
+
+    return {
+      id: generateId(),
+      date,
+      type,
+      group: String(getField(row, ['Nhóm','Nhom','Group','group','Nhóm giao dịch','Nhom giao dich']) || '').trim(),
+      amount,
+      method: String(getField(row, ['Phương thức','Phuong thuc','Method','method']) || 'Tiền mặt').trim() || 'Tiền mặt',
+      person: String(getField(row, ['Người thực hiện','Nguoi thuc hien','Person','person','Người TH','Nguoi TH']) || '').trim(),
+      desc: String(getField(row, ['Nội dung','Noi dung','Description','description','Desc','desc']) || '').trim(),
+      note: String(getField(row, ['Ghi chú','Ghi chu','Note','note']) || '').trim(),
+      createdAt: Date.now()
+    };
+  }).filter(Boolean);
+}
+
+function getField(row, names) {
+  for (const name of names) {
+    if (Object.prototype.hasOwnProperty.call(row, name)) return row[name];
+  }
+  const normalizedMap = {};
+  Object.keys(row).forEach(k => normalizedMap[removeVietnameseTone(k).toLowerCase().trim()] = row[k]);
+  for (const name of names) {
+    const key = removeVietnameseTone(name).toLowerCase().trim();
+    if (Object.prototype.hasOwnProperty.call(normalizedMap, key)) return normalizedMap[key];
+  }
+  return '';
+}
+
+function normalizeTypeValue(value) {
+  const v = removeVietnameseTone(String(value || '')).toLowerCase().trim();
+  if (['thu','income','in','doanh thu','khoan thu'].includes(v)) return 'income';
+  if (['chi','expense','out','khoan chi','chi phi'].includes(v)) return 'expense';
+  return '';
+}
+
+function normalizeDateValue(value) {
+  if (!value) return '';
+  if (value instanceof Date && !isNaN(value)) return value.toISOString().split('T')[0];
+
+  // Excel serial date
+  if (typeof value === 'number' && value > 20000) {
+    const excelEpoch = new Date(Date.UTC(1899, 11, 30));
+    excelEpoch.setUTCDate(excelEpoch.getUTCDate() + Math.floor(value));
+    return excelEpoch.toISOString().split('T')[0];
+  }
+
+  const str = String(value).trim();
+  if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(str)) {
+    const [y,m,d] = str.split('-');
+    return `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`;
+  }
+  if (/^\d{1,2}[\/.-]\d{1,2}[\/.-]\d{4}$/.test(str)) {
+    const [d,m,y] = str.split(/[\/.-]/);
+    return `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`;
+  }
+  const parsed = new Date(str);
+  return isNaN(parsed) ? '' : parsed.toISOString().split('T')[0];
+}
+
+function parseCSVText(text) {
+  const cleaned = String(text || '').replace(/^\uFEFF/, '');
+  const rows = [];
+  let row = [], cell = '', inQuotes = false;
+
+  for (let i = 0; i < cleaned.length; i++) {
+    const char = cleaned[i];
+    const next = cleaned[i + 1];
+    if (char === '"') {
+      if (inQuotes && next === '"') { cell += '"'; i++; }
+      else inQuotes = !inQuotes;
+    } else if (char === ',' && !inQuotes) {
+      row.push(cell); cell = '';
+    } else if ((char === '\n' || char === '\r') && !inQuotes) {
+      if (char === '\r' && next === '\n') i++;
+      row.push(cell); cell = '';
+      if (row.some(v => String(v).trim() !== '')) rows.push(row);
+      row = [];
+    } else {
+      cell += char;
+    }
+  }
+  row.push(cell);
+  if (row.some(v => String(v).trim() !== '')) rows.push(row);
+  if (rows.length === 0) return [];
+
+  const headers = rows[0].map(h => String(h).trim());
+  return rows.slice(1).map(r => {
+    const obj = {};
+    headers.forEach((h, i) => obj[h] = r[i] || '');
+    return obj;
+  });
+}
+
+function downloadImportTemplate() {
+  const headers = ['Ngày','Loại','Nhóm','Nội dung','Phương thức','Người thực hiện','Số tiền','Ghi chú'];
+  const sampleRows = [
+    ['2026-06-01','Thu','Thu bán hàng','Thu tiền bán hàng đơn A001','Chuyển khoản','Phòng Kinh Doanh','12000000',''],
+    ['2026-06-02','Chi','Chi marketing','Chi quảng cáo Facebook','Chuyển khoản','Phòng Marketing','2500000','']
+  ];
+  const csv = '\uFEFF' + [headers, ...sampleRows]
+    .map(row => row.map(v => `"${String(v).replace(/"/g,'""')}"`).join(','))
+    .join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'mau_nhap_du_lieu_atkd.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function removeVietnameseTone(str) {
+  return String(str || '')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd').replace(/Đ/g, 'D');
 }
 
 // ===== CLEAR ALL =====
