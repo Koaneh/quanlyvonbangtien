@@ -12,7 +12,57 @@
   <!-- Chart.js -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 </head>
-<body>
+<body class="unauthenticated">
+
+<!-- ===== LOGIN SCREEN ===== -->
+<section class="login-screen" id="loginScreen">
+  <div class="login-shell">
+    <div class="login-hero">
+      <div class="login-brand">
+        <div class="brand-icon login-brand-icon"><i class="fa-solid fa-circle-dollar-to-slot"></i></div>
+        <div>
+          <h1>CashFlow Pro</h1>
+          <p>Hệ thống quản lý vốn bằng tiền cho doanh nghiệp</p>
+        </div>
+      </div>
+      <div class="login-benefits">
+        <div><i class="fa-solid fa-lock"></i><span>Đăng nhập trước khi sử dụng</span></div>
+        <div><i class="fa-solid fa-user-shield"></i><span>Phân quyền theo vai trò</span></div>
+        <div><i class="fa-solid fa-database"></i><span>Dữ liệu lưu trên trình duyệt bằng LocalStorage</span></div>
+      </div>
+    </div>
+
+    <div class="login-card">
+      <div class="login-card-header">
+        <h2>Đăng nhập hệ thống</h2>
+        <p>Chọn tài khoản phù hợp với vai trò sử dụng</p>
+      </div>
+      <form id="loginForm" novalidate>
+        <div class="form-group">
+          <label for="loginUsername"><i class="fa-solid fa-user"></i> Tên đăng nhập</label>
+          <input type="text" id="loginUsername" class="form-control" placeholder="Ví dụ: admin" autocomplete="username" />
+        </div>
+        <div class="form-group">
+          <label for="loginPassword"><i class="fa-solid fa-key"></i> Mật khẩu</label>
+          <div class="password-field">
+            <input type="password" id="loginPassword" class="form-control" placeholder="Nhập mật khẩu" autocomplete="current-password" />
+            <button type="button" class="password-toggle" id="passwordToggle" aria-label="Hiện/ẩn mật khẩu"><i class="fa-solid fa-eye"></i></button>
+          </div>
+        </div>
+        <div class="login-error" id="loginError"></div>
+        <button type="submit" class="btn btn-primary login-submit"><i class="fa-solid fa-right-to-bracket"></i> Đăng nhập</button>
+      </form>
+
+      <div class="demo-accounts">
+        <div class="demo-title"><i class="fa-solid fa-circle-info"></i> Tài khoản mẫu</div>
+        <button type="button" class="demo-account" data-user="admin" data-pass="admin123"><strong>admin</strong><span>Admin toàn quyền</span></button>
+        <button type="button" class="demo-account" data-user="ketoan" data-pass="ketoan123"><strong>ketoan</strong><span>Kế toán nhập/sửa giao dịch</span></button>
+        <button type="button" class="demo-account" data-user="viewer" data-pass="viewer123"><strong>viewer</strong><span>Chỉ xem báo cáo</span></button>
+      </div>
+    </div>
+  </div>
+</section>
+
 
 <!-- ===== SIDEBAR ===== -->
 <aside class="sidebar" id="sidebar">
@@ -59,6 +109,10 @@
       <i class="fa-solid fa-file-export"></i>
       <span>Xuất Dữ Liệu</span>
     </a>
+    <a href="#" class="nav-item" data-page="users">
+      <i class="fa-solid fa-users-gear"></i>
+      <span>Người Dùng</span>
+    </a>
   </nav>
 
   <div class="sidebar-footer">
@@ -80,8 +134,14 @@
       <div class="page-title" id="pageTitle">Dashboard</div>
     </div>
     <div class="topbar-right">
+      <div class="user-chip" id="userChip">
+        <i class="fa-solid fa-user-shield"></i>
+        <span id="userNameText">Người dùng</span>
+        <small id="userRoleText">Vai trò</small>
+      </div>
+      <button class="btn btn-ghost btn-sm" id="logoutBtn"><i class="fa-solid fa-right-from-bracket"></i> Đăng xuất</button>
       <div class="topbar-date" id="topbarDate"></div>
-      <button class="btn btn-primary btn-sm" onclick="navigateTo('add-transaction')">
+      <button class="btn btn-primary btn-sm" id="quickAddBtn" onclick="navigateTo('add-transaction')">
         <i class="fa-solid fa-plus"></i> Thêm GD
       </button>
     </div>
@@ -95,6 +155,73 @@
       <div class="page-header">
         <h1>Tổng Quan Dòng Tiền</h1>
         <p>Theo dõi tình hình tài chính doanh nghiệp trong thời gian thực</p>
+      </div>
+
+
+      <!-- Team Assignment -->
+      <div class="team-section-card">
+        <div class="team-section-header">
+          <div>
+            <span class="eyebrow"><i class="fa-solid fa-users-gear"></i> Nhóm phát triển website</span>
+            <h2>Thành viên & phân công công việc</h2>
+            <p>Phân chia nhiệm vụ đồng đều trong quá trình xây dựng website quản lý vốn bằng tiền.</p>
+          </div>
+          <div class="team-badge"><i class="fa-solid fa-code-branch"></i> HTML · CSS · JavaScript</div>
+        </div>
+
+        <div class="team-grid">
+          <div class="team-member-card">
+            <div class="member-avatar">DA</div>
+            <div class="member-info">
+              <h3>Dương Thuý An</h3>
+              <p>Thiết kế giao diện tổng quan</p>
+              <ul>
+                <li>Xây dựng bố cục trang chủ và dashboard.</li>
+                <li>Thiết kế hệ thống màu sắc, thẻ thống kê và bố cục responsive.</li>
+                <li>Kiểm tra trải nghiệm người dùng trên laptop và điện thoại.</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="team-member-card">
+            <div class="member-avatar">TT</div>
+            <div class="member-info">
+              <h3>Nghiêm Thu Thuỷ</h3>
+              <p>Xử lý dữ liệu và giao dịch</p>
+              <ul>
+                <li>Phụ trách chức năng nhập, sửa, xóa giao dịch thu chi.</li>
+                <li>Thiết lập nhóm giao dịch, phương thức thanh toán và kiểm tra dữ liệu đầu vào.</li>
+                <li>Quản lý lưu trữ dữ liệu bằng LocalStorage.</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="team-member-card">
+            <div class="member-avatar">VK</div>
+            <div class="member-info">
+              <h3>Vũ Đăng Khoa</h3>
+              <p>Báo cáo và phân tích dòng tiền</p>
+              <ul>
+                <li>Xây dựng các chỉ tiêu tổng thu, tổng chi, dòng tiền thuần và tồn quỹ.</li>
+                <li>Thiết kế biểu đồ thu chi, dòng tiền theo ngày và cơ cấu theo nhóm.</li>
+                <li>Phụ trách chức năng lọc dữ liệu, xuất CSV và kiểm tra kết quả báo cáo.</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="team-member-card">
+            <div class="member-avatar">BD</div>
+            <div class="member-info">
+              <h3>Bùi Đình Đăng</h3>
+              <p>Đăng nhập, phân quyền và hoàn thiện hệ thống</p>
+              <ul>
+                <li>Phụ trách màn hình đăng nhập và phân quyền người dùng.</li>
+                <li>Thiết lập vai trò Admin, Kế toán và Người xem báo cáo.</li>
+                <li>Kiểm thử lỗi, tối ưu thao tác và hoàn thiện tài liệu sử dụng.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Period Filter -->
@@ -573,7 +700,7 @@
           <div class="export-icon export-icon-csv"><i class="fa-solid fa-file-csv"></i></div>
           <h3>Xuất CSV</h3>
           <p>Tải xuống toàn bộ danh sách giao dịch dạng file .csv, mở được bằng Excel hoặc Google Sheets.</p>
-          <button class="btn btn-primary" onclick="exportCSV()">
+          <button class="btn btn-primary" id="exportCsvBtn" onclick="exportCSV()">
             <i class="fa-solid fa-download"></i> Tải xuống CSV
           </button>
         </div>
@@ -582,7 +709,7 @@
           <div class="export-icon export-icon-demo"><i class="fa-solid fa-database"></i></div>
           <h3>Tải Dữ Liệu Mẫu</h3>
           <p>Nạp lại bộ dữ liệu mẫu minh họa (sẽ ghi đè dữ liệu hiện tại). Dùng để demo hoặc thử nghiệm.</p>
-          <button class="btn btn-secondary" onclick="loadSampleData(true)">
+          <button class="btn btn-secondary" id="sampleDataBtn" onclick="loadSampleData(true)">
             <i class="fa-solid fa-rotate"></i> Nạp Dữ Liệu Mẫu
           </button>
         </div>
@@ -591,7 +718,7 @@
           <div class="export-icon export-icon-del"><i class="fa-solid fa-trash-can"></i></div>
           <h3>Xóa Toàn Bộ Dữ Liệu</h3>
           <p>Xóa tất cả giao dịch và thiết lập đã lưu. Hành động này không thể hoàn tác.</p>
-          <button class="btn btn-danger" onclick="clearAllData()">
+          <button class="btn btn-danger" id="clearDataBtn" onclick="clearAllData()">
             <i class="fa-solid fa-trash-can"></i> Xóa Toàn Bộ
           </button>
         </div>
@@ -603,6 +730,94 @@
           <h3><i class="fa-solid fa-circle-info"></i> Thông Tin Dữ Liệu</h3>
         </div>
         <div class="info-table" id="dataInfoTable"></div>
+      </div>
+    </section>
+
+
+    <!-- ===== PAGE: USERS ===== -->
+    <section class="page" id="page-users">
+      <div class="page-header">
+        <h1>Quản Lý Người Dùng & Phân Quyền</h1>
+        <p>Admin có thể tạo tài khoản, khóa/mở tài khoản và gán vai trò sử dụng hệ thống</p>
+      </div>
+
+      <div class="role-grid">
+        <div class="role-card role-admin">
+          <div class="role-icon"><i class="fa-solid fa-user-shield"></i></div>
+          <h3>Admin</h3>
+          <p>Toàn quyền: nhập, sửa, xóa, xuất dữ liệu, nạp mẫu, xóa hệ thống và quản lý người dùng.</p>
+        </div>
+        <div class="role-card role-accountant">
+          <div class="role-icon"><i class="fa-solid fa-calculator"></i></div>
+          <h3>Kế toán</h3>
+          <p>Được nhập và chỉnh sửa giao dịch, xem báo cáo, quản lý tồn quỹ và xuất CSV.</p>
+        </div>
+        <div class="role-card role-viewer">
+          <div class="role-icon"><i class="fa-solid fa-eye"></i></div>
+          <h3>Viewer</h3>
+          <p>Chỉ được xem Dashboard, danh sách giao dịch, báo cáo và tồn quỹ; không được thay đổi dữ liệu.</p>
+        </div>
+      </div>
+
+      <div class="charts-row user-layout">
+        <div class="form-card">
+          <div class="form-card-header">
+            <i class="fa-solid fa-user-plus"></i>
+            <span>Tạo / Cập Nhật Tài Khoản</span>
+          </div>
+          <form id="userForm" novalidate>
+            <input type="hidden" id="userEditId" />
+            <div class="form-group">
+              <label for="newFullName">Họ tên / Bộ phận</label>
+              <input type="text" id="newFullName" class="form-control" placeholder="Ví dụ: Phòng Kế toán" />
+            </div>
+            <div class="form-group">
+              <label for="newUsername">Tên đăng nhập</label>
+              <input type="text" id="newUsername" class="form-control" placeholder="Không dấu, không khoảng trắng" />
+            </div>
+            <div class="form-group">
+              <label for="newPassword">Mật khẩu</label>
+              <input type="text" id="newPassword" class="form-control" placeholder="Tối thiểu 6 ký tự" />
+            </div>
+            <div class="form-group">
+              <label for="newRole">Vai trò</label>
+              <select id="newRole" class="form-control">
+                <option value="admin">Admin</option>
+                <option value="accountant">Kế toán</option>
+                <option value="viewer">Viewer</option>
+              </select>
+            </div>
+            <div class="form-actions">
+              <button type="button" class="btn btn-ghost" onclick="resetUserForm()"><i class="fa-solid fa-rotate-left"></i> Làm lại</button>
+              <button type="submit" class="btn btn-primary" id="saveUserBtn"><i class="fa-solid fa-floppy-disk"></i> Lưu tài khoản</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="section-card">
+          <div class="section-card-header">
+            <h3><i class="fa-solid fa-users"></i> Danh Sách Tài Khoản</h3>
+          </div>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Tài khoản</th>
+                  <th>Họ tên</th>
+                  <th>Vai trò</th>
+                  <th>Trạng thái</th>
+                  <th>Hành động</th>
+                </tr>
+              </thead>
+              <tbody id="usersTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="auth-note">
+        <i class="fa-solid fa-shield-halved"></i>
+        <span>Lưu ý: Vì website chạy thuần HTML/CSS/JS và LocalStorage, chức năng đăng nhập phù hợp để demo hoặc dùng nội bộ trên máy cá nhân. Nếu triển khai thật cho doanh nghiệp, cần backend, mã hóa mật khẩu và xác thực phía máy chủ.</span>
       </div>
     </section>
 
